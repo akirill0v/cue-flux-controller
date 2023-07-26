@@ -1,0 +1,7 @@
+domain: toolkit.fluxcd.io
+repo: github.com/akirill0v/cue-flux-controller
+resources:
+- group: cue
+  kind: CueInstance
+  version: v2beta1
+version: "2"
