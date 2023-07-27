@@ -337,15 +337,20 @@ when reconciling this CueInstance.</p>
 <td>
 <code>kubeConfig</code><br>
 <em>
-<a href="#cue.contrib.flux.io/v1alpha1.KubeConfig">
-KubeConfig
+<a href="https://godoc.org/github.com/fluxcd/pkg/apis/meta#KubeConfigReference">
+github.com/fluxcd/pkg/apis/meta.KubeConfigReference
 </a>
 </em>
 </td>
 <td>
 <em>(Optional)</em>
-<p>The KubeConfig for reconciling the CueInstance on a remote cluster.
-When specified, KubeConfig takes precedence over ServiceAccountName.</p>
+<p>The KubeConfig for reconciling the Kustomization on a remote cluster.
+When used in combination with KustomizationSpec.ServiceAccountName,
+forces the controller to act on behalf of that Service Account at the
+target cluster.
+If the &ndash;default-service-account flag is set, its value will be used as
+a controller level fallback for when KustomizationSpec.ServiceAccountName
+is empty.</p>
 </td>
 </tr>
 <tr>
@@ -645,15 +650,20 @@ when reconciling this CueInstance.</p>
 <td>
 <code>kubeConfig</code><br>
 <em>
-<a href="#cue.contrib.flux.io/v1alpha1.KubeConfig">
-KubeConfig
+<a href="https://godoc.org/github.com/fluxcd/pkg/apis/meta#KubeConfigReference">
+github.com/fluxcd/pkg/apis/meta.KubeConfigReference
 </a>
 </em>
 </td>
 <td>
 <em>(Optional)</em>
-<p>The KubeConfig for reconciling the CueInstance on a remote cluster.
-When specified, KubeConfig takes precedence over ServiceAccountName.</p>
+<p>The KubeConfig for reconciling the Kustomization on a remote cluster.
+When used in combination with KustomizationSpec.ServiceAccountName,
+forces the controller to act on behalf of that Service Account at the
+target cluster.
+If the &ndash;default-service-account flag is set, its value will be used as
+a controller level fallback for when KustomizationSpec.ServiceAccountName
+is empty.</p>
 </td>
 </tr>
 <tr>
@@ -839,47 +849,6 @@ string
 </td>
 <td>
 <p>The name of the gate.</p>
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<h3 id="cue.contrib.flux.io/v1alpha1.KubeConfig">KubeConfig
-</h3>
-<p>
-(<em>Appears on:</em>
-<a href="#cue.contrib.flux.io/v1alpha1.CueInstanceSpec">CueInstanceSpec</a>)
-</p>
-<p>KubeConfig references a Kubernetes secret that contains a kubeconfig file.</p>
-<div class="md-typeset__scrollwrap">
-<div class="md-typeset__table">
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<code>secretRef</code><br>
-<em>
-<a href="https://godoc.org/github.com/fluxcd/pkg/apis/meta#LocalObjectReference">
-github.com/fluxcd/pkg/apis/meta.LocalObjectReference
-</a>
-</em>
-</td>
-<td>
-<p>SecretRef holds the name to a secret that contains a &lsquo;value&rsquo; key with
-the kubeconfig file as the value. It must be in the same namespace as
-the CueInstance.
-It is recommended that the kubeconfig is self-contained, and the secret
-is regularly updated if credentials such as a cloud-access-token expire.
-Cloud specific <code>cmd-path</code> auth helpers will not function without adding
-binaries and credentials to the Pod that is responsible for reconciling
-the CueInstance.</p>
 </td>
 </tr>
 </tbody>
