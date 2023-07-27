@@ -122,10 +122,15 @@ type CueInstanceSpec struct {
 	// +optional
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 
-	// The KubeConfig for reconciling the CueInstance on a remote cluster.
-	// When specified, KubeConfig takes precedence over ServiceAccountName.
+	// The KubeConfig for reconciling the Kustomization on a remote cluster.
+	// When used in combination with KustomizationSpec.ServiceAccountName,
+	// forces the controller to act on behalf of that Service Account at the
+	// target cluster.
+	// If the --default-service-account flag is set, its value will be used as
+	// a controller level fallback for when KustomizationSpec.ServiceAccountName
+	// is empty.
 	// +optional
-	KubeConfig *KubeConfig `json:"kubeConfig,omitempty"`
+	KubeConfig *meta.KubeConfigReference `json:"kubeConfig,omitempty"`
 
 	// Force instructs the controller to recreate resources
 	// when patching fails due to an immutable field change.
@@ -188,20 +193,6 @@ func (in CueInstance) GetTimeout() time.Duration {
 		return 30 * time.Second
 	}
 	return duration
-}
-
-// KubeConfig references a Kubernetes secret that contains a kubeconfig file.
-type KubeConfig struct {
-	// SecretRef holds the name to a secret that contains a 'value' key with
-	// the kubeconfig file as the value. It must be in the same namespace as
-	// the CueInstance.
-	// It is recommended that the kubeconfig is self-contained, and the secret
-	// is regularly updated if credentials such as a cloud-access-token expire.
-	// Cloud specific `cmd-path` auth helpers will not function without adding
-	// binaries and credentials to the Pod that is responsible for reconciling
-	// the CueInstance.
-	// +required
-	SecretRef meta.LocalObjectReference `json:"secretRef,omitempty"`
 }
 
 // GetRetryInterval returns the retry interval
