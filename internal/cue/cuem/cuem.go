@@ -11,9 +11,9 @@ import (
 type CueDependencyManager struct{}
 
 func (m CueDependencyManager) Get(ctx context.Context, rootPath string, upgrade bool, obj *cueinstancev1a1.CueInstance) error {
-	cc := cuemod.FromContext(ctx)
+	cc := cuemod.ContextFor(rootPath)
 	return cc.Get(cuemod.WithOpts(ctx,
 		cuemod.OptUpgrade(upgrade),
 		cuemod.OptImport("go"),
-		cuemod.OptVerbose(true)), rootPath)
+		cuemod.OptVerbose(true)), ".")
 }

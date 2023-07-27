@@ -637,6 +637,7 @@ func (r *CueInstanceReconciler) build(ctx context.Context,
 	revision, moduleRootPath, dirPath string,
 	manager cuemanageri.DependencyManager,
 	obj *cueinstancev1a1.CueInstance) ([]byte, error) {
+	cctx := cuecontext.New()
 	log := ctrl.LoggerFrom(ctx)
 
 	// Process dependencies for module.
@@ -644,7 +645,6 @@ func (r *CueInstanceReconciler) build(ctx context.Context,
 		return nil, err
 	}
 
-	cctx := cuecontext.New()
 	tags := make([]string, 0, len(obj.Spec.Tags))
 
 	for _, t := range obj.Spec.Tags {
