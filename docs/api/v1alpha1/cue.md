@@ -344,12 +344,12 @@ github.com/fluxcd/pkg/apis/meta.KubeConfigReference
 </td>
 <td>
 <em>(Optional)</em>
-<p>The KubeConfig for reconciling the Kustomization on a remote cluster.
-When used in combination with KustomizationSpec.ServiceAccountName,
+<p>The KubeConfig for reconciling the CueInstance on a remote cluster.
+When used in combination with CueInstanceSpec.ServiceAccountName,
 forces the controller to act on behalf of that Service Account at the
 target cluster.
 If the &ndash;default-service-account flag is set, its value will be used as
-a controller level fallback for when KustomizationSpec.ServiceAccountName
+a controller level fallback for when CueInstanceSpec.ServiceAccountName
 is empty.</p>
 </td>
 </tr>
@@ -657,12 +657,12 @@ github.com/fluxcd/pkg/apis/meta.KubeConfigReference
 </td>
 <td>
 <em>(Optional)</em>
-<p>The KubeConfig for reconciling the Kustomization on a remote cluster.
-When used in combination with KustomizationSpec.ServiceAccountName,
+<p>The KubeConfig for reconciling the CueInstance on a remote cluster.
+When used in combination with CueInstanceSpec.ServiceAccountName,
 forces the controller to act on behalf of that Service Account at the
 target cluster.
 If the &ndash;default-service-account flag is set, its value will be used as
-a controller level fallback for when KustomizationSpec.ServiceAccountName
+a controller level fallback for when CueInstanceSpec.ServiceAccountName
 is empty.</p>
 </td>
 </tr>
@@ -861,7 +861,7 @@ string
 (<em>Appears on:</em>
 <a href="#cue.contrib.flux.io/v1alpha1.CueInstanceStatus">CueInstanceStatus</a>)
 </p>
-<p>ResourceInventory contains a list of Kubernetes resource object references that have been applied by a Kustomization.</p>
+<p>ResourceInventory contains a list of Kubernetes resource object references that have been applied by a CueInstance.</p>
 <div class="md-typeset__scrollwrap">
 <div class="md-typeset__table">
 <table>

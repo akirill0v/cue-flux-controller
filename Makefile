@@ -32,11 +32,9 @@ install-envtest: envtest
 
 # Run controller tests
 KUBEBUILDER_ASSETS?="$(shell $(ENVTEST) --arch=$(ENVTEST_ARCH) use -i $(ENVTEST_KUBERNETES_VERSION) --bin-dir=$(ENVTEST_ASSETS_DIR) -p path)"
-test: generate fmt vet manifests api-docs download-crd-deps install-envtest
-	KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) go test ./controllers  -v -coverprofile cover.out
+test: tidy generate fmt vet manifests api-docs download-crd-deps install-envtest $(SOPS)
+	KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) go test ./... $(GO_TEST_ARGS) -v -coverprofile cover.out
 
-target-test: generate fmt vet manifests api-docs download-crd-deps install-envtest
-	KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) go test ./controllers  -v -coverprofile cover.out -run $(TARGET)
 # Build manager binary
 manager: generate fmt vet
 	go build -o bin/manager main.go

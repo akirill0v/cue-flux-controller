@@ -111,24 +111,34 @@ spec:
                 type: string
               kubeConfig:
                 description: The KubeConfig for reconciling the CueInstance on a remote
-                  cluster. When specified, KubeConfig takes precedence over ServiceAccountName.
+                  cluster. When used in combination with CueInstanceSpec.ServiceAccountName,
+                  forces the controller to act on behalf of that Service Account at
+                  the target cluster. If the --default-service-account flag is set,
+                  its value will be used as a controller level fallback for when CueInstanceSpec.ServiceAccountName
+                  is empty.
                 properties:
                   secretRef:
-                    description: SecretRef holds the name to a secret that contains
-                      a 'value' key with the kubeconfig file as the value. It must
-                      be in the same namespace as the CueInstance. It is recommended
-                      that the kubeconfig is self-contained, and the secret is regularly
-                      updated if credentials such as a cloud-access-token expire.
-                      Cloud specific `cmd-path` auth helpers will not function without
-                      adding binaries and credentials to the Pod that is responsible
-                      for reconciling the CueInstance.
+                    description: SecretRef holds the name of a secret that contains
+                      a key with the kubeconfig file as the value. If no key is set,
+                      the key will default to 'value'. It is recommended that the
+                      kubeconfig is self-contained, and the secret is regularly updated
+                      if credentials such as a cloud-access-token expire. Cloud specific
+                      `cmd-path` auth helpers will not function without adding binaries
+                      and credentials to the Pod that is responsible for reconciling
+                      Kubernetes resources.
                     properties:
+                      key:
+                        description: Key in the Secret, when not specified an implementation-specific
+                          default key is used.
+                        type: string
                       name:
-                        description: Name of the referent.
+                        description: Name of the Secret.
                         type: string
                     required:
                     - name
                     type: object
+                required:
+                - secretRef
                 type: object
               package:
                 description: The CUE package to use for the CUE instance. This is

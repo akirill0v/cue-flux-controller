@@ -122,12 +122,12 @@ type CueInstanceSpec struct {
 	// +optional
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 
-	// The KubeConfig for reconciling the Kustomization on a remote cluster.
-	// When used in combination with KustomizationSpec.ServiceAccountName,
+	// The KubeConfig for reconciling the CueInstance on a remote cluster.
+	// When used in combination with CueInstanceSpec.ServiceAccountName,
 	// forces the controller to act on behalf of that Service Account at the
 	// target cluster.
 	// If the --default-service-account flag is set, its value will be used as
-	// a controller level fallback for when KustomizationSpec.ServiceAccountName
+	// a controller level fallback for when CueInstanceSpec.ServiceAccountName
 	// is empty.
 	// +optional
 	KubeConfig *meta.KubeConfigReference `json:"kubeConfig,omitempty"`
