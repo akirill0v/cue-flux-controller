@@ -924,7 +924,10 @@ func (r *CueInstanceReconciler) apply(ctx context.Context,
 		if err != nil {
 			return false, nil, err
 		}
-		resultSet.Append(changeSet.Entries)
+
+		if changeSet != nil && len(changeSet.Entries) > 0 {
+			resultSet.Append(changeSet.Entries)
+		}
 
 		if changeSet != nil && len(changeSet.Entries) > 0 {
 			log.Info("server-side apply for cluster definitions completed", "output", changeSet.ToMap())
@@ -949,7 +952,10 @@ func (r *CueInstanceReconciler) apply(ctx context.Context,
 		if err != nil {
 			return false, nil, err
 		}
-		resultSet.Append(changeSet.Entries)
+
+		if changeSet != nil && len(changeSet.Entries) > 0 {
+			resultSet.Append(changeSet.Entries)
+		}
 
 		if changeSet != nil && len(changeSet.Entries) > 0 {
 			log.Info("server-side apply for cluster class types completed", "output", changeSet.ToMap())
@@ -975,7 +981,10 @@ func (r *CueInstanceReconciler) apply(ctx context.Context,
 		if err != nil {
 			return false, nil, fmt.Errorf("%w\n%s", err, changeSetLog.String())
 		}
-		resultSet.Append(changeSet.Entries)
+
+		if changeSet != nil && len(changeSet.Entries) > 0 {
+			resultSet.Append(changeSet.Entries)
+		}
 
 		if changeSet != nil && len(changeSet.Entries) > 0 {
 			log.Info("server-side apply completed", "output", changeSet.ToMap(), "revision", revision)
@@ -1045,7 +1054,7 @@ func (r *CueInstanceReconciler) checkHealth(ctx context.Context,
 	}); err != nil {
 		conditions.MarkFalse(obj, meta.ReadyCondition, cueinstancev1a1.HealthCheckFailedReason, err.Error())
 		conditions.MarkFalse(obj, cueinstancev1a1.HealthyCondition, cueinstancev1a1.HealthCheckFailedReason, err.Error())
-		return fmt.Errorf("Health check failed after %s: %w", time.Since(checkStart).String(), err)
+		return fmt.Errorf("health check failed after %s: %w", time.Since(checkStart).String(), err)
 	}
 
 	// Emit recovery event if the previous health check failed.
