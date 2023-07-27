@@ -53,6 +53,7 @@ import (
 	cueinstancev1a1 "github.com/akirill0v/cue-flux-controller/api/v1alpha1"
 	cuemanageri "github.com/akirill0v/cue-flux-controller/internal/cue"
 	cuemanager "github.com/akirill0v/cue-flux-controller/internal/cue/cuem"
+	inventory "github.com/akirill0v/cue-flux-controller/internal/inventory"
 )
 
 type CueInstanceReconciler struct {
@@ -179,14 +180,13 @@ func (r *CueInstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	// Add finalizer first if it doesn't exist to avoid the race condition
 	// between init and delete.
 	if !controllerutil.ContainsFinalizer(obj, cueinstancev1a1.CueInstanceFinalizer) {
-		patch := client.MergeFrom(obj.DeepCopy())
 		controllerutil.AddFinalizer(obj, cueinstancev1a1.CueInstanceFinalizer)
-		if err := r.Patch(ctx, obj, patch); err != nil {
-			log.Error(err, "unable to register finalizer")
-			return ctrl.Result{}, err
-
-		}
 		return ctrl.Result{Requeue: true}, nil
+	}
+
+	// Prune managed resources if the object is under deletion.
+	if !obj.ObjectMeta.DeletionTimestamp.IsZero() {
+		return r.finalize(ctx, obj)
 	}
 
 	// Skip reconciliation if the object is suspended.
@@ -276,6 +276,12 @@ func (r *CueInstanceReconciler) reconcile(
 	conditions.MarkReconciling(obj, meta.ProgressingReason, progressingMsg)
 	if err := r.patch(ctx, obj, patcher); err != nil {
 		return fmt.Errorf("failed to update status, error: %w", err)
+	}
+
+	// Create a snapshot of the current inventory.
+	oldInventory := inventory.New()
+	if obj.Status.Inventory != nil {
+		obj.Status.Inventory.DeepCopyInto(oldInventory)
 	}
 
 	// Create tmp dir.
@@ -393,8 +399,29 @@ func (r *CueInstanceReconciler) reconcile(
 		return err
 	}
 
-	// Prune resources.
-	// TODO!!!
+	// Create an inventory from the reconciled resources.
+	newInventory := inventory.New()
+	err = inventory.AddChangeSet(newInventory, changeSet)
+	if err != nil {
+		conditions.MarkFalse(obj, meta.ReadyCondition, cueinstancev1a1.ReconciliationFailedReason, err.Error())
+		return err
+	}
+
+	// Set last applied inventory in status.
+	obj.Status.Inventory = newInventory
+
+	// Detect stale resources which are subject to garbage collection.
+	staleObjects, err := inventory.Diff(oldInventory, newInventory)
+	if err != nil {
+		conditions.MarkFalse(obj, meta.ReadyCondition, cueinstancev1a1.ReconciliationFailedReason, err.Error())
+		return err
+	}
+
+	// Run garbage collection for stale resources that do not have pruning disabled.
+	if _, err := r.prune(ctx, resourceManager, obj, revision, staleObjects); err != nil {
+		conditions.MarkFalse(obj, meta.ReadyCondition, cueinstancev1a1.PruneFailedReason, err.Error())
+		return err
+	}
 
 	// Run the health checks for the last applied resources.
 	isNewRevision := !src.GetArtifact().HasRevision(obj.Status.LastAppliedRevision)
@@ -1033,4 +1060,102 @@ func (r *CueInstanceReconciler) checkHealth(ctx context.Context,
 	}
 
 	return nil
+}
+
+func (r *CueInstanceReconciler) prune(ctx context.Context,
+	manager *ssa.ResourceManager,
+	obj *cueinstancev1a1.CueInstance,
+	revision string,
+	objects []*unstructured.Unstructured) (bool, error) {
+	if !obj.Spec.Prune {
+		return false, nil
+	}
+
+	log := ctrl.LoggerFrom(ctx)
+
+	opts := ssa.DeleteOptions{
+		PropagationPolicy: metav1.DeletePropagationBackground,
+		Inclusions:        manager.GetOwnerLabels(obj.Name, obj.Namespace),
+		Exclusions: map[string]string{
+			fmt.Sprintf("%s/prune", cueinstancev1a1.GroupVersion.Group):     cueinstancev1a1.DisabledValue,
+			fmt.Sprintf("%s/reconcile", cueinstancev1a1.GroupVersion.Group): cueinstancev1a1.DisabledValue,
+		},
+	}
+
+	changeSet, err := manager.DeleteAll(ctx, objects, opts)
+	if err != nil {
+		return false, err
+	}
+
+	// emit event only if the prune operation resulted in changes
+	if changeSet != nil && len(changeSet.Entries) > 0 {
+		log.Info(fmt.Sprintf("garbage collection completed: %s", changeSet.String()))
+		r.event(obj, revision, eventv1.EventSeverityInfo, changeSet.String(), nil)
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func (r *CueInstanceReconciler) finalize(ctx context.Context,
+	obj *cueinstancev1a1.CueInstance) (ctrl.Result, error) {
+	log := ctrl.LoggerFrom(ctx)
+	if obj.Spec.Prune &&
+		!obj.Spec.Suspend &&
+		obj.Status.Inventory != nil &&
+		obj.Status.Inventory.Entries != nil {
+		objects, _ := inventory.List(obj.Status.Inventory)
+
+		impersonation := runtimeClient.NewImpersonator(
+			r.Client,
+			r.StatusPoller,
+			r.PollingOpts,
+			obj.Spec.KubeConfig,
+			r.KubeConfigOpts,
+			r.DefaultServiceAccount,
+			obj.Spec.ServiceAccountName,
+			obj.GetNamespace(),
+		)
+		if impersonation.CanImpersonate(ctx) {
+			kubeClient, _, err := impersonation.GetClient(ctx)
+			if err != nil {
+				return ctrl.Result{}, err
+			}
+
+			resourceManager := ssa.NewResourceManager(kubeClient, nil, ssa.Owner{
+				Field: r.ControllerName,
+				Group: cueinstancev1a1.GroupVersion.Group,
+			})
+
+			opts := ssa.DeleteOptions{
+				PropagationPolicy: metav1.DeletePropagationBackground,
+				Inclusions:        resourceManager.GetOwnerLabels(obj.Name, obj.Namespace),
+				Exclusions: map[string]string{
+					fmt.Sprintf("%s/prune", cueinstancev1a1.GroupVersion.Group):     cueinstancev1a1.DisabledValue,
+					fmt.Sprintf("%s/reconcile", cueinstancev1a1.GroupVersion.Group): cueinstancev1a1.DisabledValue,
+				},
+			}
+
+			changeSet, err := resourceManager.DeleteAll(ctx, objects, opts)
+			if err != nil {
+				r.event(obj, obj.Status.LastAppliedRevision, eventv1.EventSeverityError, "pruning for deleted resource failed", nil)
+				// Return the error so we retry the failed garbage collection
+				return ctrl.Result{}, err
+			}
+
+			if changeSet != nil && len(changeSet.Entries) > 0 {
+				r.event(obj, obj.Status.LastAppliedRevision, eventv1.EventSeverityInfo, changeSet.String(), nil)
+			}
+		} else {
+			// when the account to impersonate is gone, log the stale objects and continue with the finalization
+			msg := fmt.Sprintf("unable to prune objects: \n%s", ssa.FmtUnstructuredList(objects))
+			log.Error(fmt.Errorf("skiping pruning, failed to find account to impersonate"), msg)
+			r.event(obj, obj.Status.LastAppliedRevision, eventv1.EventSeverityError, msg, nil)
+		}
+	}
+
+	// Remove our finalizer from the list and update it
+	controllerutil.RemoveFinalizer(obj, cueinstancev1a1.CueInstanceFinalizer)
+	// Stop reconciliation as the object is being deleted
+	return ctrl.Result{}, nil
 }
