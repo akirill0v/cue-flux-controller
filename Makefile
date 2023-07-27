@@ -1,5 +1,5 @@
 # Image URL to use all building/pushing image targets
-IMG ?= ghcr.io/phoban01/cue-controller
+IMG ?= ghcr.io/akirill0v/cue-flux-controller
 TAG ?= latest
 
 # Produce CRDs that work back to Kubernetes 1.16
