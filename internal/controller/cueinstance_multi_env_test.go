@@ -9,6 +9,7 @@ import (
 	"github.com/fluxcd/pkg/apis/meta"
 	sourcev1 "github.com/fluxcd/source-controller/api/v1beta2"
 	. "github.com/onsi/gomega"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -88,4 +89,16 @@ func TestCueInstanceReconciler_MultiEnv(t *testing.T) {
 	g.Expect(k8sClient.Get(context.TODO(), types.NamespacedName{
 		Name: "dev",
 	}, ns)).To(Succeed())
+
+	sa := &corev1.ServiceAccount{}
+	g.Expect(k8sClient.Get(context.TODO(), types.NamespacedName{
+		Name:      "podinfo",
+		Namespace: "dev",
+	}, sa)).To(Succeed())
+
+	deployment := &appsv1.Deployment{}
+	g.Expect(k8sClient.Get(context.TODO(), types.NamespacedName{
+		Name:      "podinfo",
+		Namespace: "dev",
+	}, deployment)).To(Succeed())
 }
