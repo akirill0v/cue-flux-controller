@@ -26,7 +26,7 @@ spec:
           - --log-encoding=json
           - --enable-leader-election
         name: manager
-        image: phoban01/cue-controller:latest
+        image: akirill0v/cue-flux-controller:latest
         env:
         - name: RUNTIME_NAMESPACE
           valueFrom:

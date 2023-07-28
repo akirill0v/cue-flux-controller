@@ -9,6 +9,10 @@ on:
         description: 'image tag prefix'
         default: 'rc'
         required: true
+      platform:
+        description: 'image build platform'
+        default: 'linux/amd64'
+        required: true
 
 permissions:
   contents: write # needed to write releases
@@ -60,7 +64,7 @@ jobs:
           builder: ${{ steps.buildx.outputs.name }}
           context: .
           file: ./Dockerfile
-          platforms: linux/amd64
+          platforms: ${{ github.event.inputs.tag }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
       - name: Check images

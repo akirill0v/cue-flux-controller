@@ -13,6 +13,6 @@ configMapGenerator:
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
-- name: phoban01/cue-controller
-  newName: ghcr.io/phoban01/cue-controller
-  newTag: v0.0.1-alpha.2
+- name: akirill0v/cue-flux-controller
+  newName: ghcr.io/akirill0v/cue-flux-controller
+  newTag: rc-66cfdcea
