@@ -16,7 +16,7 @@ permissions:
   packages: write # needed for ghcr access
 
 env:
-  CONTROLLER: cue-controller
+  CONTROLLER: cue-flux-controller
 
 jobs:
   build-push:
