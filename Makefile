@@ -59,20 +59,20 @@ uninstall: manifests
 
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 deploy: manifests
-	cd config/manager && kustomize edit set image phoban01/cue-controller=${IMG}:${TAG}
+	cd config/manager && kustomize edit set image akirill0v/cue-flux-controller=${IMG}:${TAG}
 	kustomize build config/default | kubectl apply -f -
 
 # Deploy controller dev image in the configured Kubernetes cluster in ~/.kube/config
 dev-deploy: manifests
 	mkdir -p config/dev && cp config/default/* config/dev
-	cd config/dev && kustomize edit set image phoban01/cue-controller=${IMG}:${TAG}
+	cd config/dev && kustomize edit set image akirill0v/cue-flux-controller=${IMG}:${TAG}
 	kustomize build config/dev | kubectl apply -f -
 	rm -rf config/dev
 
 # Delete dev deployment and CRDs
 dev-cleanup: manifests
 	mkdir -p config/dev && cp config/default/* config/dev
-	cd config/dev && kustomize edit set image phoban01/cue-controller=${IMG}:${TAG}
+	cd config/dev && kustomize edit set image akirill0v/cue-flux-controller=${IMG}:${TAG}
 	kustomize build config/dev | kubectl delete -f -
 	rm -rf config/dev
 

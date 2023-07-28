@@ -15,4 +15,4 @@ kind: Kustomization
 images:
 - name: akirill0v/cue-flux-controller
   newName: ghcr.io/akirill0v/cue-flux-controller
-  newTag: rc-66cfdcea
+  newTag: pre-1

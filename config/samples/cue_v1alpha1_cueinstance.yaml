@@ -1,0 +1,25 @@
+apiVersion: source.toolkit.fluxcd.io/v1beta1
+kind: GitRepository
+metadata:
+  name: cuedemo
+  namespace: flux-system
+spec:
+  interval: 5m
+  url: https://github.com/akirill0v/cuedemo
+  ref:
+    branch: main
+---
+apiVersion: cue.contrib.flux.io/v1alpha1
+kind: CueInstance
+metadata:
+  name: podinfo
+  namespace: flux-system
+spec:
+  interval: 1m
+  root: "./examples/podinfo"
+  expressions:
+  - out
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: cuedemo

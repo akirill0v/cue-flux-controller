@@ -28,6 +28,9 @@ spec:
         name: manager
         image: akirill0v/cue-flux-controller:latest
         env:
+        # Needed for cue dependency manager
+        - name: GOPATH
+          value: /tmp/go
         - name: RUNTIME_NAMESPACE
           valueFrom:
             fieldRef:

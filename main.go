@@ -33,10 +33,9 @@ import (
 	sourcev1b2 "github.com/fluxcd/source-controller/api/v1beta2"
 
 	// +kubebuilder:scaffold:imports
+	cueinstancev1a1 "github.com/akirill0v/cue-flux-controller/api/v1alpha1"
 	"github.com/akirill0v/cue-flux-controller/internal/controller"
 	"github.com/akirill0v/cue-flux-controller/internal/features"
-	// intkube "github.com/fluxcd/helm-controller/internal/kube"
-	// "github.com/fluxcd/helm-controller/internal/oomwatch"
 )
 
 const controllerName = "cue-flux-controller"
@@ -51,7 +50,7 @@ func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 	_ = sourcev1.AddToScheme(scheme)
 	_ = sourcev1b2.AddToScheme(scheme)
-	// _ = cuev1alpha1.AddToScheme(scheme) // TODO: Add to scheme
+	_ = cueinstancev1a1.AddToScheme(scheme) // TODO: Add to scheme
 
 	//+kubebuilder:scaffold:scheme
 }
