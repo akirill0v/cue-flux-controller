@@ -1,0 +1,7 @@
+# Adds namespace to all resources.
+namespace: flux-system
+
+bases:
+- ../crd
+- ../rbac
+- ../manager
