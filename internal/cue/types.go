@@ -8,5 +8,5 @@ import (
 
 // Interface for cue dependency manager
 type DependencyManager interface {
-	Get(ctx context.Context, rootPath string, upgrade bool, obj *cueinstancev1a1.CueInstance) error
+	Get(ctx context.Context, moduleRootPath, dirPath string, upgrade bool, obj *cueinstancev1a1.CueInstance) error
 }

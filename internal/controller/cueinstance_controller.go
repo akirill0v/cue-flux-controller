@@ -356,6 +356,18 @@ func (r *CueInstanceReconciler) reconcile(
 
 	dependencyManager := cuemanager.CueDependencyManager{}
 
+	// get cue dependencies from module.cue file
+
+	cueDepDir := "."
+	if obj.Spec.Path != "" && len(obj.Spec.Path) > 0 {
+		cueDepDir = fmt.Sprintf("./%s", strings.TrimLeft(obj.Spec.Path, "./"))
+	}
+
+	if err := r.getCueDependencies(ctx, revision, moduleRootPath, cueDepDir, dependencyManager, obj); err != nil {
+		conditions.MarkFalse(obj, meta.ReadyCondition, cueinstancev1a1.BuildFailedReason, err.Error())
+		return err
+	}
+
 	// build the cueinstance
 	resources, err := r.build(ctx, revision, moduleRootPath, dirPath, dependencyManager, obj)
 	if err != nil {
@@ -633,17 +645,27 @@ func (r *CueInstanceReconciler) checkDependencies(ctx context.Context,
 	return nil
 }
 
+func (r *CueInstanceReconciler) getCueDependencies(ctx context.Context,
+	revision, moduleRootPath, dirPath string,
+	manager cuemanageri.DependencyManager,
+	obj *cueinstancev1a1.CueInstance) error {
+
+	// Process dependencies for module.
+	if err := manager.Get(ctx, moduleRootPath, dirPath, true, obj); err != nil {
+		msg := fmt.Sprintf("cue dependency manager failed: %s", err)
+		r.event(obj, revision, eventv1.EventSeverityInfo, msg, nil)
+		return err
+	}
+
+	return nil
+}
+
 func (r *CueInstanceReconciler) build(ctx context.Context,
 	revision, moduleRootPath, dirPath string,
 	manager cuemanageri.DependencyManager,
 	obj *cueinstancev1a1.CueInstance) ([]byte, error) {
 	cctx := cuecontext.New()
 	log := ctrl.LoggerFrom(ctx)
-
-	// Process dependencies for module.
-	if err := manager.Get(ctx, moduleRootPath, true, obj); err != nil {
-		return nil, err
-	}
 
 	tags := make([]string, 0, len(obj.Spec.Tags))
 

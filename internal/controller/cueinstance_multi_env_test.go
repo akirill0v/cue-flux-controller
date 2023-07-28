@@ -15,7 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func TestCueInstanceReconciler_Validation(t *testing.T) {
+func TestCueInstanceReconciler_MultiEnv(t *testing.T) {
 	g := NewWithT(t)
 	id := "builder-" + randStringRunes(5)
 
@@ -25,12 +25,12 @@ func TestCueInstanceReconciler_Validation(t *testing.T) {
 	err = createKubeConfigSecret(id)
 	g.Expect(err).NotTo(HaveOccurred(), "failed to create kubeconfig secret")
 
-	deployNamespace := "cue-build-" + randStringRunes(4)
+	deployNamespace := "cue-multi-env"
 	err = createNamespace(deployNamespace)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	artifactFile := "instance-" + randStringRunes(5)
-	artifactChecksum, err := createArtifact(testServer, "testdata/validation", artifactFile)
+	artifactChecksum, err := createArtifact(testServer, "testdata/multi-env", artifactFile)
 	g.Expect(err).ToNot(HaveOccurred())
 
 	repositoryName := types.NamespacedName{
@@ -53,13 +53,15 @@ func TestCueInstanceReconciler_Validation(t *testing.T) {
 		},
 		Spec: cueinstancev1a1.CueInstanceSpec{
 			Interval: metav1.Duration{Duration: reconciliationInterval},
-			Root:     "./testdata/validation",
-			Path:     "data/",
-			Package:  "platform",
-			Validate: &cueinstancev1a1.Validation{
-				Mode:   cueinstancev1a1.DropPolicy,
-				Schema: "#HasOwnerLabel",
-				Type:   "yaml",
+			Root:     "./testdata/multi-env",
+			Path:     "./infra/dev",
+			Exprs: []string{
+				"out",
+			},
+			Tags: []cueinstancev1a1.TagVar{
+				{
+					Name: "dev",
+				},
 			},
 			KubeConfig: &meta.KubeConfigReference{
 				SecretRef: meta.SecretKeyReference{
@@ -76,21 +78,14 @@ func TestCueInstanceReconciler_Validation(t *testing.T) {
 
 	g.Expect(k8sClient.Create(context.TODO(), cueInstance)).To(Succeed())
 
-	var obj cueinstancev1a1.CueInstance
 	g.Eventually(func() bool {
+		var obj cueinstancev1a1.CueInstance
 		_ = k8sClient.Get(context.Background(), client.ObjectKeyFromObject(cueInstance), &obj)
 		return obj.Status.LastAppliedRevision == "main/"+artifactChecksum
 	}, timeout, time.Second).Should(BeTrue())
 
-	g.Eventually(func() bool {
-		var obj corev1.ServiceAccount
-		err := k8sClient.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "test-good"}, &obj)
-		return err == nil
-	}, timeout, time.Second).Should(BeTrue())
-
-	g.Eventually(func() bool {
-		var obj corev1.ServiceAccount
-		err := k8sClient.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "test-bad"}, &obj)
-		return err == nil
-	}, timeout, time.Second).Should(BeFalse())
+	ns := &corev1.Namespace{}
+	g.Expect(k8sClient.Get(context.TODO(), types.NamespacedName{
+		Name: "dev",
+	}, ns)).To(Succeed())
 }
