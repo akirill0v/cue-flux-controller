@@ -26,6 +26,7 @@ import (
 	"github.com/fluxcd/pkg/ssa"
 	"github.com/fluxcd/pkg/tar"
 	corev1 "k8s.io/api/core/v1"
+
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -857,6 +858,71 @@ func (r *CueInstanceReconciler) build(ctx context.Context,
 	}
 
 	return result.Bytes(), nil
+}
+
+func (r *CueInstanceReconciler) checkGates(ctx context.Context,
+	revision, moduleRootPath, dirPath string,
+	manager cuemanageri.DependencyManager,
+	obj *cueinstancev1a1.CueInstance) error {
+
+	cctx := cuecontext.New()
+	log := ctrl.LoggerFrom(ctx)
+
+	tags := make([]string, 0, len(obj.Spec.Tags))
+	for _, t := range obj.Spec.Tags {
+		if t.Value != "" {
+			tags = append(tags, fmt.Sprintf("%s=%s", t.Name, t.Value))
+		} else {
+			tags = append(tags, t.Name)
+		}
+	}
+
+	tagVars := load.DefaultTagVars()
+	for _, t := range obj.Spec.TagVars {
+		tagVars[t.Name] = load.TagVar{
+			Func: func() (ast.Expr, error) {
+				return ast.NewString(t.Value), nil
+			},
+		}
+	}
+
+	cfg := &load.Config{
+		ModuleRoot: moduleRootPath,
+		Dir:        dirPath,
+		DataFiles:  true, //TODO: this could be configurable
+		Tags:       tags,
+		TagVars:    tagVars,
+	}
+
+	if obj.Spec.Package != "" {
+		cfg.Package = obj.Spec.Package
+	}
+
+	ix := load.Instances([]string{}, cfg)
+	if len(ix) == 0 {
+		return fmt.Errorf("no instances found")
+	}
+
+	inst := ix[0]
+	if inst.Err != nil {
+		return inst.Err
+	}
+
+	value := cctx.BuildInstance(inst)
+
+	var errors []error
+
+	for _, g := range obj.Spec.Gates {
+		result := value.LookupPath(cue.ParsePath(g.Expr))
+		valid := result.Validate()
+		open, err := result.Bool()
+		if !open || valid != nil {
+			log.Info("gate check failed", "gate", g.Name, "expr", g.Expr, "result", result, "error", err)
+			errors = append(errors, fmt.Errorf("%s failed: %w", g.Name, err))
+		}
+	}
+
+	return kerrors.NewAggregate(errors)
 }
 
 func (r *CueInstanceReconciler) apply(ctx context.Context,
